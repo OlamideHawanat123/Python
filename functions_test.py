@@ -12,6 +12,10 @@ class MyTestCase(unittest.TestCase):
         result = get_maximum([12, 34, 90, 12])
         self.assertEqual(result, 90)
 
+    def test_that_get_minimum_returns_the_minimum_in_an_array(self):
+        result = get_minimum([1, 2, 3, 67, -5])
+        self.assertEqual(result, -5)
+
 
 
 if __name__ == '__main__':
