@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebSocket Private Chat</title>
+</head>
+<body>
+  <h2>Private Chat Test</h2>
+
+  <textarea id="log" rows="10" cols="60" readonly></textarea><br />
+  <input type="text" id="message" placeholder="Type your message" />
+  <button onclick="sendMessage()">Send</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+  <script>
+    // 👇 Ask the user which account they are using (patient or doctor)
+    const currentUserId = prompt("Enter your user ID (e.g. patient1 or doctor1):");
+
+    // 👇 Create a WebSocket connection to your Spring Boot backend
+    const socket = new SockJS("http://localhost:8081/ws");
+    const stompClient = Stomp.over(socket);
+
+    stompClient.connect({}, (frame) => {
+      console.log("Connected: " + frame);
+
+      // 👇 Subscribe to the private queue for this user
+      stompClient.subscribe("/user/" + currentUserId + "/queue/private", (message) => {
+        const body = JSON.parse(message.body);
+        console.log("Received:", body);
+        document.getElementById("log").value += `\n${body.senderId}: ${body.content}`;
+      });
+
+      document.getElementById("log").value += `Connected as ${currentUserId}\n`;
+    });
+
+    function sendMessage() {
+      const msg = document.getElementById("message").value;
+      if (!msg.trim()) return;
+
+      // 👇 You can manually decide who to send to (doctor1/patient1)
+      const receiverId = currentUserId === "patient1" ? "doctor1" : "patient1";
+
+      stompClient.send(
+        "/app/private-message",
+        {},
+        JSON.stringify({
+          senderId: currentUserId,
+          receiverId: receiverId,
+          content: msg,
+        })
+      );
+
+      document.getElementById("log").value += `\nYou: ${msg}`;
+      document.getElementById("message").value = "";
+    }
+  </script>
+</body>
+</html>
